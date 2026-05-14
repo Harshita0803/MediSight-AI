@@ -1,0 +1,785 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1rem 0}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem}
+.nav-btn{padding:7px 16px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;font-size:13px;color:var(--color-text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nav-btn:hover{background:var(--color-background-secondary)}
+.nav-btn.active{background:var(--color-background-primary);border-color:var(--color-border-primary);color:var(--color-text-primary);font-weight:500}
+.page{display:none}
+.page.active{display:block}
+.hero{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.5rem;margin-bottom:1.5rem;background:var(--color-background-primary)}
+.hero-title{font-size:20px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.hero-sub{font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:1rem}
+.badge-row{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:500}
+.b-green{background:#E1F5EE;color:#0F6E56}
+.b-blue{background:#E6F1FB;color:#185FA5}
+.b-purple{background:#EEEDFE;color:#3C3489}
+.b-amber{background:#FAEEDA;color:#633806}
+.b-red{background:#FCEBEB;color:#A32D2D}
+.b-gray{background:#F1EFE8;color:#444441}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;text-align:center}
+.metric-n{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.metric-l{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.section-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.card-body{font-size:13px;color:var(--color-text-secondary);line-height:1.65}
+.step-grid{display:grid;gap:10px}
+.step{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md)}
+.step-num{font-size:12px;font-weight:500;min-width:24px;height:24px;border-radius:50%;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);flex-shrink:0;margin-top:1px}
+.step-content{}
+.step-head{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.step-body{font-size:12px;color:var(--color-text-secondary);line-height:1.6}
+.step-code{font-size:11px;font-family:var(--font-mono);background:var(--color-background-secondary);padding:6px 10px;border-radius:var(--border-radius-md);margin-top:6px;color:var(--color-text-primary);white-space:pre-wrap;border:0.5px solid var(--color-border-tertiary)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.skill-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:1.5rem}
+.skill-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px}
+.skill-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.skill-item{font-size:12px;color:var(--color-text-secondary);padding:2px 0;line-height:1.5}
+.week-row{display:flex;gap:0;margin-bottom:8px}
+.week-label{font-size:12px;color:var(--color-text-secondary);min-width:60px;padding:8px 10px 8px 0;flex-shrink:0}
+.week-bar{flex:1;display:flex;gap:4px;align-items:center}
+.week-task{font-size:11px;padding:5px 10px;border-radius:var(--border-radius-md);font-weight:500}
+.wt-data{background:#E6F1FB;color:#0C447C}
+.wt-ml{background:#EEEDFE;color:#26215C}
+.wt-llm{background:#E1F5EE;color:#085041}
+.wt-api{background:#FAEEDA;color:#412402}
+.wt-ui{background:#FAECE7;color:#4A1B0C}
+.wt-eval{background:#FCEBEB;color:#501313}
+.wt-deploy{background:#F1EFE8;color:#2C2C2A}
+.free-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.free-item{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px}
+.free-name{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.free-desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.free-limit{font-size:11px;color:var(--color-text-tertiary);margin-top:4px}
+.arch-flow{display:flex;flex-direction:column;gap:0}
+.arch-layer{display:flex;gap:8px;align-items:stretch;margin-bottom:4px}
+.arch-label{font-size:11px;color:var(--color-text-tertiary);min-width:90px;display:flex;align-items:center;font-weight:500;letter-spacing:.03em}
+.arch-boxes{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+.arch-box{font-size:11px;padding:7px 12px;border-radius:var(--border-radius-md);font-weight:500;white-space:nowrap}
+.arch-arrow{text-align:center;color:var(--color-text-tertiary);font-size:12px;margin:1px 0 1px 98px}
+.portfolio-section{margin-bottom:1.5rem}
+.kv-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px}
+.kv-row:last-child{border-bottom:none}
+.kv-key{color:var(--color-text-secondary)}
+.kv-val{color:var(--color-text-primary);font-weight:500;text-align:right;max-width:60%}
+</style>
+
+<div class="wrap">
+<h2 class="sr-only">MediSight AI — full project blueprint for Harshita's portfolio covering ML, LLMs, RAG, ETL, FastAPI, and deployment at zero cost</h2>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="show('overview')">Overview</button>
+  <button class="nav-btn" onclick="show('architecture')">Architecture</button>
+  <button class="nav-btn" onclick="show('phase1')">Phase 1 — Data & ETL</button>
+  <button class="nav-btn" onclick="show('phase2')">Phase 2 — ML models</button>
+  <button class="nav-btn" onclick="show('phase3')">Phase 3 — RAG & LLM</button>
+  <button class="nav-btn" onclick="show('phase4')">Phase 4 — API & UI</button>
+  <button class="nav-btn" onclick="show('phase5')">Phase 5 — Eval & deploy</button>
+  <button class="nav-btn" onclick="show('tools')">Free tools & cost</button>
+  <button class="nav-btn" onclick="show('portfolio')">Portfolio write-up</button>
+</div>
+
+<div id="overview" class="page active">
+  <div class="hero">
+    <div class="hero-title">MediSight AI — Clinical document intelligence & patient risk platform</div>
+    <div class="hero-sub">A healthcare AI system that ingests clinical notes and medical records, runs ML risk models on structured patient data, and provides a RAG-powered Q&A interface so clinicians can ask natural-language questions about any patient's history — with citations back to source documents.</div>
+    <div class="badge-row">
+      <span class="badge b-red">Healthcare</span>
+      <span class="badge b-green">RAG + LLM</span>
+      <span class="badge b-blue">ML risk models</span>
+      <span class="badge b-purple">ETL pipeline</span>
+      <span class="badge b-amber">FastAPI + Streamlit</span>
+      <span class="badge b-gray">100% free</span>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-n">12</div><div class="metric-l">resume skills covered</div></div>
+    <div class="metric"><div class="metric-n">5</div><div class="metric-l">build phases</div></div>
+    <div class="metric"><div class="metric-n">8–10</div><div class="metric-l">weeks to build</div></div>
+    <div class="metric"><div class="metric-n">$0</div><div class="metric-l">total cost</div></div>
+  </div>
+
+  <div class="section-title">Why this project</div>
+  <div class="two-col" style="margin-bottom:1.5rem">
+    <div class="card">
+      <div class="card-title"><span class="badge b-red">Healthcare domain</span></div>
+      <div class="card-body">Healthcare AI is one of the highest-demand verticals. Clinical NLP, risk scoring, and document intelligence are all hot hiring areas. Public datasets (MIMIC-III notes, synthetic EHR data) are freely available and realistic.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge b-green">Full stack of your skills</span></div>
+      <div class="card-body">This single project forces you to use ETL, SQL, feature engineering, Scikit-learn, TensorFlow, LangChain, FAISS/pgvector, prompt engineering, FastAPI, Power BI, and deployment — every section of your resume has something to point at.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge b-blue">Realistic complexity</span></div>
+      <div class="card-body">It has a structured data layer (patient vitals, labs, diagnoses) AND an unstructured layer (clinical notes, discharge summaries) — exactly the mixed data environment you described at Humanity Labs.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge b-purple">Portfolio impact</span></div>
+      <div class="card-body">A working demo with a live URL, a clear problem statement, measurable outcomes, and published code on GitHub is what separates senior candidates. This is that project.</div>
+    </div>
+  </div>
+
+  <div class="section-title">Skills covered</div>
+  <div class="skill-grid">
+    <div class="skill-card">
+      <div class="skill-label">Data engineering</div>
+      <div class="skill-item">ETL pipeline (Python + Pandas)</div>
+      <div class="skill-item">SQL schema design (Star Schema)</div>
+      <div class="skill-item">Data quality validation</div>
+      <div class="skill-item">Feature engineering</div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-label">Machine learning</div>
+      <div class="skill-item">Classification (readmission risk)</div>
+      <div class="skill-item">Regression (LOS prediction)</div>
+      <div class="skill-item">Scikit-learn pipelines</div>
+      <div class="skill-item">Hyperparameter tuning</div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-label">Generative AI</div>
+      <div class="skill-item">RAG pipeline (LangChain)</div>
+      <div class="skill-item">Embeddings + FAISS</div>
+      <div class="skill-item">Prompt engineering</div>
+      <div class="skill-item">LLM evaluation</div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-label">Backend & APIs</div>
+      <div class="skill-item">FastAPI REST service</div>
+      <div class="skill-item">Async endpoints</div>
+      <div class="skill-item">Streaming responses</div>
+      <div class="skill-item">Error handling + logging</div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-label">Databases</div>
+      <div class="skill-item">PostgreSQL + pgvector</div>
+      <div class="skill-item">FAISS vector index</div>
+      <div class="skill-item">SQL query optimization</div>
+      <div class="skill-item">Metadata filtering</div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-label">Visualization & cloud</div>
+      <div class="skill-item">Streamlit dashboard</div>
+      <div class="skill-item">Power BI report (optional)</div>
+      <div class="skill-item">GitHub Actions CI/CD</div>
+      <div class="skill-item">Hugging Face Spaces deploy</div>
+    </div>
+  </div>
+</div>
+
+<div id="architecture" class="page">
+  <div class="section-title">Full system architecture</div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="arch-flow">
+      <div class="arch-layer">
+        <div class="arch-label">Data sources</div>
+        <div class="arch-boxes">
+          <span class="arch-box wt-data">MIMIC-III clinical notes</span>
+          <span class="arch-box wt-data">Synthetic EHR CSV</span>
+          <span class="arch-box wt-data">Lab results JSON</span>
+        </div>
+      </div>
+      <div class="arch-arrow">↓ ETL pipeline (Python + Pandas + SQL)</div>
+      <div class="arch-layer">
+        <div class="arch-label">Storage layer</div>
+        <div class="arch-boxes">
+          <span class="arch-box wt-ml">PostgreSQL (structured)</span>
+          <span class="arch-box wt-ml">Raw text files (notes)</span>
+          <span class="arch-box wt-ml">FAISS / pgvector index</span>
+        </div>
+      </div>
+      <div class="arch-arrow">↓ dual processing path</div>
+      <div class="arch-layer">
+        <div class="arch-label">ML layer</div>
+        <div class="arch-boxes">
+          <span class="arch-box wt-llm">Risk classifier (XGBoost)</span>
+          <span class="arch-box wt-llm">LOS regressor</span>
+          <span class="arch-box wt-llm">Feature pipeline (Scikit)</span>
+        </div>
+      </div>
+      <div class="arch-layer" style="margin-top:4px">
+        <div class="arch-label">RAG layer</div>
+        <div class="arch-boxes">
+          <span class="arch-box wt-api">Chunking + embedding</span>
+          <span class="arch-box wt-api">LangChain retriever</span>
+          <span class="arch-box wt-api">LLM (Groq free tier)</span>
+        </div>
+      </div>
+      <div class="arch-arrow">↓ FastAPI service layer</div>
+      <div class="arch-layer">
+        <div class="arch-label">API layer</div>
+        <div class="arch-boxes">
+          <span class="arch-box wt-ui">POST /analyze-patient</span>
+          <span class="arch-box wt-ui">POST /ask</span>
+          <span class="arch-box wt-ui">GET /risk-score</span>
+          <span class="arch-box wt-ui">GET /summary</span>
+        </div>
+      </div>
+      <div class="arch-arrow">↓ UI layer</div>
+      <div class="arch-layer">
+        <div class="arch-label">Frontend</div>
+        <div class="arch-boxes">
+          <span class="arch-box wt-eval">Streamlit app (demo)</span>
+          <span class="arch-box wt-eval">Power BI dashboard</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Data flow in detail</div>
+  <div class="card">
+    <div class="card-body" style="font-size:13px;line-height:1.8">
+      <strong style="color:var(--color-text-primary);display:block;margin-bottom:6px">Structured path (SQL + ML):</strong>
+      Raw CSV (patient vitals, labs, diagnoses, medications) → ETL cleans, validates, transforms → loaded into PostgreSQL star schema (fact_encounters, dim_patient, dim_diagnosis) → feature engineering creates age_group, comorbidity_score, avg_lab_deviation → Scikit-learn + XGBoost pipeline trains readmission classifier and LOS regressor → model artifacts saved with joblib → FastAPI loads models at startup and scores on demand.
+      <br><br>
+      <strong style="color:var(--color-text-primary);display:block;margin-bottom:6px">Unstructured path (RAG):</strong>
+      Clinical notes (discharge summaries, progress notes) → text cleaning → chunked into 512-token overlapping segments → embedded using sentence-transformers (free, local) → stored in FAISS index or pgvector → LangChain retriever fetches top-5 chunks → system prompt + context + question → Groq LLaMA-3 (free API) generates answer → response includes cited source chunks.
+    </div>
+  </div>
+</div>
+
+<div id="phase1" class="page">
+  <div class="section-title">Phase 1 — Data sourcing & ETL pipeline (weeks 1–2)</div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 1 — Get free data</div>
+    <div class="card-body">
+      Use two sources. First: register at physionet.org to access MIMIC-III demo (freely available, no cost — 100 de-identified patients with real clinical notes). Second: generate synthetic structured EHR data using Synthea (free Java tool from MITRE) — run locally, generates realistic CSV files for thousands of patients with diagnoses, labs, vitals, and medications.
+    </div>
+    <div class="step-code">Synthea: java -jar synthea-with-dependencies.jar -p 5000 Massachusetts
+MIMIC-III demo: download from physionet.org/content/mimiciii-demo (free signup)</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 2 — Design the database schema</div>
+    <div class="card-body">Build a Star Schema in PostgreSQL (free, run locally via Docker or install directly). Central fact table is fact_encounters — one row per hospital visit. Dimensions: dim_patient, dim_diagnosis (ICD codes), dim_medication, dim_lab_result. This is exactly the Star Schema work from your Crayon experience — point to it directly in your portfolio.</div>
+    <div class="step-code">CREATE TABLE fact_encounters (
+  encounter_id VARCHAR PRIMARY KEY,
+  patient_id VARCHAR REFERENCES dim_patient(patient_id),
+  admission_date DATE,
+  discharge_date DATE,
+  length_of_stay_days INT,
+  readmitted_30d BOOLEAN,  -- ML target 1
+  primary_diagnosis_code VARCHAR
+);
+CREATE TABLE dim_patient (
+  patient_id VARCHAR PRIMARY KEY,
+  age INT, gender VARCHAR, race VARCHAR,
+  insurance_type VARCHAR, zip_code VARCHAR
+);</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 3 — Build the ETL pipeline</div>
+    <div class="card-body">Write a Python ETL pipeline with four stages: Extract (read CSVs/JSON from Synthea output), Transform (clean nulls, standardize date formats, map ICD codes, calculate derived fields), Validate (data quality checks — null rates, referential integrity, value range checks), Load (bulk insert into PostgreSQL with psycopg2). Add logging at each stage. Structure as a proper Python module with config files.</div>
+    <div class="step-code">project/
+  etl/
+    extract.py        # reads raw Synthea CSV files
+    transform.py      # cleaning, standardization, feature calc
+    validate.py       # data quality checks (null %, ranges, FK integrity)
+    load.py           # PostgreSQL bulk insert via psycopg2
+    pipeline.py       # orchestrates all stages, logs each step
+  config/
+    db_config.yaml    # DB connection (use .env for secrets)
+    etl_config.yaml   # chunk sizes, validation thresholds</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 4 — Feature engineering</div>
+    <div class="card-body">After loading raw data, run a second transformation pass to create ML-ready features. This is your "AI-ready feature dataset" concept from Crayon. Create: age_bucket (0–17, 18–40, 41–65, 65+), comorbidity_count (number of chronic diagnoses), avg_lab_deviation (z-score of lab values vs normal range), medication_count, prior_admissions_12m, days_since_last_visit, insurance_risk_tier.</div>
+    <div class="step-code">def build_features(df_encounters, df_labs, df_diagnoses):
+    df = df_encounters.copy()
+    df['comorbidity_count'] = df_diagnoses.groupby('patient_id')['icd_code'].nunique()
+    df['avg_lab_deviation'] = compute_lab_zscore(df_labs)
+    df['prior_admissions_12m'] = compute_rolling_admissions(df, window_days=365)
+    df['age_bucket'] = pd.cut(df['age'], bins=[0,17,40,65,200],
+                               labels=['pediatric','adult','middle','senior'])
+    return df</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Step 5 — Data quality report</div>
+    <div class="card-body">Generate a data quality report as a pandas-profiling HTML file (free library). This becomes a portfolio artifact — it shows you care about data quality before modeling. Track: null rates per column, distribution of key features, outlier detection, duplicate row counts. Save the report to /reports/ and link it from your GitHub README.</div>
+    <div class="step-code">pip install ydata-profiling
+from ydata_profiling import ProfileReport
+profile = ProfileReport(df_features, title="MediSight Data Quality Report")
+profile.to_file("reports/data_quality_report.html")</div>
+  </div>
+</div>
+
+<div id="phase2" class="page">
+  <div class="section-title">Phase 2 — ML models (weeks 3–4)</div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Model 1 — 30-day readmission classifier</div>
+    <div class="card-body">Binary classification problem: will this patient be readmitted within 30 days? Use XGBoost (best in class for tabular healthcare data). Build a full Scikit-learn Pipeline with preprocessing (ColumnTransformer for numeric scaling + categorical encoding) and the model. Use stratified k-fold cross-validation. Tune with RandomizedSearchCV. Evaluate with ROC-AUC, F1, precision-recall curve. Handle class imbalance with class_weight='balanced'.</div>
+    <div class="step-code">from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from xgboost import XGBClassifier
+from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
+
+preprocessor = ColumnTransformer([
+    ('num', StandardScaler(), numeric_cols),
+    ('cat', OneHotEncoder(handle_unknown='ignore'), cat_cols)
+])
+pipeline = Pipeline([
+    ('prep', preprocessor),
+    ('clf', XGBClassifier(scale_pos_weight=neg_pos_ratio, random_state=42))
+])
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+search = RandomizedSearchCV(pipeline, param_grid, cv=cv, scoring='roc_auc', n_iter=30)
+search.fit(X_train, y_train)</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Model 2 — Length of stay regressor</div>
+    <div class="card-body">Regression problem: predict the number of days a patient will stay. Use a GradientBoostingRegressor. Evaluate with MAE, RMSE, and R². This gives you a second model to showcase and demonstrates regression alongside classification. Save both models with joblib.</div>
+    <div class="step-code">from sklearn.ensemble import GradientBoostingRegressor
+import joblib
+
+los_model = Pipeline([
+    ('prep', preprocessor),
+    ('reg', GradientBoostingRegressor(n_estimators=200, max_depth=4))
+])
+los_model.fit(X_train, y_los_train)
+joblib.dump(los_model, 'models/los_regressor.pkl')
+joblib.dump(search.best_estimator_, 'models/readmission_classifier.pkl')</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Model explainability with SHAP</div>
+    <div class="card-body">Use SHAP (free library) to explain model predictions. Generate: global feature importance bar plot, beeswarm plot showing feature impact distribution, and per-patient waterfall plots. This is critical for healthcare AI — clinicians need to understand why the model flagged a patient. Include these plots in your Streamlit UI and in your GitHub README.</div>
+    <div class="step-code">import shap
+explainer = shap.TreeExplainer(search.best_estimator_['clf'])
+shap_values = explainer.shap_values(X_test_transformed)
+shap.summary_plot(shap_values, X_test_transformed, feature_names=feature_names)
+# Per-patient explanation for Streamlit:
+shap.waterfall_plot(explainer.expected_value, shap_values[patient_idx])</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Experiment tracking with MLflow (free)</div>
+    <div class="card-body">Log every experiment run to MLflow (run locally — completely free). Track: hyperparameters, metrics (AUC, F1, MAE), model artifacts, dataset version. This is the experiment tracking and model registry work that interviewers ask about. Run the MLflow UI to show a screenshot in your portfolio.</div>
+    <div class="step-code">import mlflow
+mlflow.set_experiment("readmission-risk")
+with mlflow.start_run():
+    mlflow.log_params(search.best_params_)
+    mlflow.log_metric("roc_auc", roc_auc_score(y_test, y_pred_proba))
+    mlflow.log_metric("f1", f1_score(y_test, y_pred))
+    mlflow.sklearn.log_model(search.best_estimator_, "model")
+# Run UI: mlflow ui --port 5000</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Statistical analysis layer</div>
+    <div class="card-body">Add a statistical analysis notebook that explores: hypothesis testing (is readmission rate significantly different by age group? by insurance type?), A/B-style comparison of high-risk vs low-risk cohorts, correlation matrix of features, and distribution analysis. This covers your statistics and A/B testing skills.</div>
+    <div class="step-code">from scipy import stats
+# Test: does insurance type affect readmission?
+groups = [df[df.insurance_type==t]['readmitted'].values for t in insurance_types]
+f_stat, p_value = stats.f_oneway(*groups)
+print(f"ANOVA p-value: {p_value:.4f} — {'significant' if p_value < 0.05 else 'not significant'}")</div>
+  </div>
+</div>
+
+<div id="phase3" class="page">
+  <div class="section-title">Phase 3 — RAG pipeline & LLM layer (weeks 5–6)</div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 1 — Prepare clinical text data</div>
+    <div class="card-body">Use MIMIC-III demo clinical notes (discharge summaries, radiology reports, nursing notes). Pre-process: remove PHI placeholders, normalize whitespace, split by note type, tag each note with metadata (patient_id, note_type, admission_date, department). Store processed notes as JSON files with these metadata fields — this metadata becomes your retrieval filter.</div>
+    <div class="step-code">note_record = {
+    "patient_id": "10006",
+    "note_id": "note_001",
+    "note_type": "discharge_summary",
+    "admission_date": "2150-03-12",
+    "department": "cardiology",
+    "text": "Patient is a 67-year-old male admitted for CHF exacerbation...",
+    "word_count": 842
+}</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 2 — Chunking strategy</div>
+    <div class="card-body">Use a hybrid chunking strategy: semantic chunking (split on sentence boundaries, not arbitrary token counts) with 512-token chunks and 64-token overlap. Add a metadata prefix to each chunk so the LLM knows context even if only given the chunk. This is the chunking design work you did at Humanity Labs — describe it exactly this way in your portfolio.</div>
+    <div class="step-code">from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,
+    chunk_overlap=64,
+    separators=["\n\n", "\n", ". ", " "]  # semantic-first splitting
+)
+
+def chunk_note(note: dict) -> list[dict]:
+    chunks = splitter.split_text(note['text'])
+    return [{
+        "chunk_id": f"{note['note_id']}_chunk_{i}",
+        "text": f"[{note['note_type']} | {note['admission_date']}]\n{chunk}",
+        "metadata": {k: note[k] for k in ['patient_id','note_type','admission_date','department']}
+    } for i, chunk in enumerate(chunks)]</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 3 — Embedding & vector store</div>
+    <div class="card-body">Use sentence-transformers (100% free, runs locally) — specifically the model "all-MiniLM-L6-v2" (384 dimensions, fast, high quality for clinical text). Build both a FAISS index (for speed demos) and pgvector storage (for production demos) — having both lets you compare in your portfolio. Use metadata filtering to restrict retrieval to a specific patient_id.</div>
+    <div class="step-code">from sentence_transformers import SentenceTransformer
+import faiss, numpy as np
+
+model = SentenceTransformer('all-MiniLM-L6-v2')  # free, local, no API key
+
+# Embed all chunks
+texts = [c['text'] for c in all_chunks]
+embeddings = model.encode(texts, batch_size=64, show_progress_bar=True)
+embeddings = np.array(embeddings).astype('float32')
+
+# Build FAISS index
+dim = embeddings.shape[1]  # 384
+index = faiss.IndexFlatIP(dim)  # inner product (cosine after normalize)
+faiss.normalize_L2(embeddings)
+index.add(embeddings)
+faiss.write_index(index, 'vector_store/clinical_notes.index')</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Step 4 — LangChain RAG pipeline</div>
+    <div class="card-body">Build a full LangChain retrieval chain. Use Groq's free API (LLaMA-3-8B or Mixtral — free tier gives ~14,400 requests/day, which is plenty). The chain: embed the question → FAISS similarity search filtered to patient_id → assemble context from top-5 chunks → fill prompt template → stream response from Groq LLM → return answer + source chunks for citation display.</div>
+    <div class="step-code">from langchain_groq import ChatGroq
+from langchain.chains import RetrievalQA
+from langchain_community.vectorstores import FAISS as LangFAISS
+
+llm = ChatGroq(model="llama3-8b-8192", temperature=0.1)  # free tier
+
+SYSTEM_PROMPT = """You are a clinical AI assistant helping physicians review patient records.
+Answer ONLY based on the provided clinical notes. If information is not in the notes, say so.
+Always cite which note section your answer comes from.
+Do not make clinical recommendations — summarize documented information only."""
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 5, "filter": {"patient_id": pid}}),
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": build_prompt(SYSTEM_PROMPT)}
+)</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Step 5 — Prompt engineering details</div>
+    <div class="card-body">Design three prompt templates: (1) Patient summary prompt — given the top retrieved chunks, generate a structured SOAP-style summary. (2) Specific Q&A prompt — answer a specific clinical question with citations. (3) Risk explanation prompt — given ML model SHAP values, explain in plain English why the patient is high-risk. Test each with 20+ diverse inputs, measure consistency, document your iteration process in a notebook.</div>
+    <div class="step-code">SUMMARY_PROMPT = """Based on the following clinical notes for patient {patient_id}, 
+provide a structured summary:
+
+CLINICAL NOTES:
+{context}
+
+Provide a summary in this format:
+- Chief complaint:
+- Key diagnoses:
+- Medications documented:
+- Notable lab findings:
+- Discharge plan (if documented):
+
+Cite the note type and date for each point."""</div>
+  </div>
+</div>
+
+<div id="phase4" class="page">
+  <div class="section-title">Phase 4 — FastAPI backend & Streamlit UI (weeks 7–8)</div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">FastAPI service — full structure</div>
+    <div class="card-body">Build a production-style FastAPI app with proper structure: routers, dependency injection, Pydantic models for request/response validation, async endpoints, startup/shutdown events for loading models, middleware for logging, and a health check endpoint. This is the backend API work from your Humanity Labs experience — your portfolio should show the code quality, not just that it runs.</div>
+    <div class="step-code">app/
+  main.py               # FastAPI app, lifespan, middleware
+  routers/
+    patients.py         # GET /patients/{id}/risk-score
+    qa.py               # POST /ask  (RAG endpoint, streaming)
+    summaries.py        # GET /patients/{id}/summary
+    pipeline.py         # POST /run-etl (trigger ETL job)
+  models/
+    schemas.py          # Pydantic request/response models
+  services/
+    ml_service.py       # loads joblib models, runs inference
+    rag_service.py      # LangChain chain, FAISS retriever
+    db_service.py       # PostgreSQL async queries (asyncpg)
+  core/
+    config.py           # settings from .env
+    logging.py          # structured JSON logging</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Key API endpoints</div>
+    <div class="step-code">POST /api/v1/patients/{patient_id}/analyze
+  → runs ML models + generates LLM summary in one call
+  → returns: {risk_score, risk_level, predicted_los,
+              top_risk_factors (SHAP), summary, sources}
+
+POST /api/v1/ask
+  Body: {patient_id: str, question: str}
+  → streams RAG answer with SSE (Server-Sent Events)
+  → returns cited source chunks inline
+
+GET /api/v1/patients/{patient_id}/risk-score
+  → fast path: ML only, no LLM, < 50ms response
+
+POST /api/v1/pipeline/run
+  → triggers ETL pipeline as background task
+  → returns job_id for polling
+
+GET /api/v1/health
+  → checks DB, FAISS index, model loaded status</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Streamlit demo app</div>
+    <div class="card-body">Streamlit is free and perfect for AI demos. Build a 3-page app: Page 1 — Patient lookup (enter patient ID, see risk score, SHAP waterfall chart, predicted LOS). Page 2 — Clinical Q&A (chat interface, type a question, see streamed answer with source citations). Page 3 — Population analytics (charts showing risk distribution across the dataset, cohort comparisons). This becomes the live demo URL on your portfolio.</div>
+    <div class="step-code">import streamlit as st
+st.set_page_config(page_title="MediSight AI", layout="wide")
+
+# Page 1: Patient Risk Dashboard
+patient_id = st.text_input("Enter Patient ID")
+if st.button("Analyze Patient"):
+    result = requests.post(f"{API_URL}/patients/{patient_id}/analyze").json()
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Readmission Risk", f"{result['risk_score']:.1%}")
+    col2.metric("Risk Level", result['risk_level'])
+    col3.metric("Predicted LOS", f"{result['predicted_los']:.1f} days")
+    # SHAP waterfall chart
+    st_shap(shap.waterfall_plot(...), height=300)</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Streaming chat interface</div>
+    <div class="card-body">Implement real streaming in the chat page using Streamlit's st.write_stream(). This demonstrates you know how to handle streaming LLM responses — a key practical skill. Show source chunks in an expandable section below each answer so the clinician can verify the information.</div>
+    <div class="step-code"># Streaming Q&A page
+question = st.chat_input("Ask about this patient's clinical history")
+if question:
+    with st.chat_message("assistant"):
+        response = requests.post(f"{API_URL}/ask",
+            json={"patient_id": pid, "question": question}, stream=True)
+        answer = st.write_stream(parse_sse_stream(response))
+
+    with st.expander("Source documents"):
+        for src in response_metadata['sources']:
+            st.caption(f"{src['note_type']} — {src['date']}")
+            st.text(src['chunk_text'])</div>
+  </div>
+</div>
+
+<div id="phase5" class="page">
+  <div class="section-title">Phase 5 — Evaluation, CI/CD & deployment (weeks 9–10)</div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">RAG evaluation framework</div>
+    <div class="card-body">Build a small evaluation dataset: 30 question-answer pairs where you know the correct answer from the clinical notes. Measure retrieval recall@5 (was the right chunk retrieved?), faithfulness (did the LLM answer stay grounded in retrieved text?), and answer relevance (did it actually answer the question?). Use RAGAS library (free). Log results to a CSV and include in README. This is the LLM evaluation work that impresses interviewers most.</div>
+    <div class="step-code">pip install ragas
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_recall
+
+eval_dataset = Dataset.from_dict({
+    "question": questions,       # 30 test questions
+    "answer": llm_answers,       # LLM responses
+    "contexts": retrieved_chunks, # what was retrieved
+    "ground_truth": true_answers  # manually written correct answers
+})
+results = evaluate(eval_dataset, metrics=[faithfulness, answer_relevancy, context_recall])
+print(results)  # publish these numbers in your README</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">GitHub Actions CI/CD pipeline</div>
+    <div class="card-body">Set up a GitHub Actions workflow that runs on every push: lint with ruff, run unit tests with pytest (test your ETL functions, schema validation, API endpoints), check that ML model loads correctly, and run a subset of the RAG eval. This is the CI/CD basics from your resume — actually having it working in a public repo is far more impressive than mentioning it in a bullet point.</div>
+    <div class="step-code"># .github/workflows/ci.yml
+name: MediSight CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with: {python-version: '3.11'}
+      - run: pip install -r requirements.txt
+      - run: ruff check .              # lint
+      - run: pytest tests/ -v          # unit tests
+      - run: python tests/smoke_test_api.py  # API health check</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Deploy to Hugging Face Spaces (free)</div>
+    <div class="card-body">Hugging Face Spaces hosts Streamlit apps for free with a public URL. Push your Streamlit app to a Space. This gives you a live demo link to put on your portfolio and resume. For the FastAPI backend, deploy to Render.com free tier (spins down after inactivity but works for demos). Store your FAISS index and model files using Git LFS or HF Datasets (both free).</div>
+    <div class="step-code"># Hugging Face Space structure
+space/
+  app.py              # your Streamlit app
+  requirements.txt    # must include streamlit, requests, etc.
+  README.md           # HF Space config (title, sdk: streamlit)
+
+# Push:
+git remote add space https://huggingface.co/spaces/YourName/MediSightAI
+git push space main
+
+# Live URL: https://huggingface.co/spaces/YourName/MediSightAI</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Power BI report (bonus — connect to PostgreSQL)</div>
+    <div class="card-body">Connect Power BI Desktop (free) to your local PostgreSQL instance. Build a 3-page report: executive overview (risk distribution, avg LOS by department, readmission rate trends), patient cohort analysis (risk score distribution by age/insurance/diagnosis), and model performance dashboard (AUC over time, precision-recall). Export to PDF for your portfolio. This directly demonstrates your Power BI skill from Crayon.</div>
+  </div>
+</div>
+
+<div id="tools" class="page">
+  <div class="section-title">Every tool used — all free</div>
+  <div class="free-grid" style="margin-bottom:1.5rem">
+    <div class="free-item">
+      <div class="free-name">Groq API</div>
+      <div class="free-desc">Free LLM API — LLaMA-3-8B, Mixtral. No credit card needed.</div>
+      <div class="free-limit">14,400 req/day free · groq.com</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">sentence-transformers</div>
+      <div class="free-desc">Local embedding models. No API key. Runs on CPU.</div>
+      <div class="free-limit">completely free · huggingface.co/sentence-transformers</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">FAISS (Meta)</div>
+      <div class="free-desc">Local vector index. No server needed. pip install faiss-cpu</div>
+      <div class="free-limit">completely free · pip install faiss-cpu</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">PostgreSQL + pgvector</div>
+      <div class="free-desc">Free open-source DB. Run locally via Docker.</div>
+      <div class="free-limit">docker run -p 5432:5432 pgvector/pgvector:pg16</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">Synthea (MITRE)</div>
+      <div class="free-desc">Generates realistic synthetic patient data — CSVs, FHIRjson.</div>
+      <div class="free-limit">completely free · github.com/synthetichealth/synthea</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">MIMIC-III demo</div>
+      <div class="free-desc">100 real de-identified patients with clinical notes. Free signup.</div>
+      <div class="free-limit">physionet.org/content/mimiciii-demo · free with registration</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">Hugging Face Spaces</div>
+      <div class="free-desc">Free Streamlit hosting with public URL. No credit card.</div>
+      <div class="free-limit">huggingface.co/spaces · free CPU tier</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">Render.com</div>
+      <div class="free-desc">Free FastAPI hosting. Spins down after 15min inactivity.</div>
+      <div class="free-limit">render.com · free tier · 750 hrs/month</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">MLflow (local)</div>
+      <div class="free-desc">Experiment tracking, model registry. Run entirely locally.</div>
+      <div class="free-limit">pip install mlflow · completely free</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">GitHub Actions</div>
+      <div class="free-desc">CI/CD pipelines. 2,000 free minutes/month on free plan.</div>
+      <div class="free-limit">github.com · 2000 min/month free</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">RAGAS</div>
+      <div class="free-desc">RAG evaluation framework. pip install ragas.</div>
+      <div class="free-limit">completely free · docs.ragas.io</div>
+    </div>
+    <div class="free-item">
+      <div class="free-name">Power BI Desktop</div>
+      <div class="free-desc">Free Windows app. Connect to PostgreSQL locally.</div>
+      <div class="free-limit">microsoft.com/power-bi · free desktop version</div>
+    </div>
+  </div>
+
+  <div class="section-title">Build timeline</div>
+  <div style="margin-bottom:1rem">
+    <div class="week-row"><div class="week-label">Week 1</div><div class="week-bar"><span class="week-task wt-data">Data sourcing (Synthea + MIMIC)</span><span class="week-task wt-data">PostgreSQL schema design</span></div></div>
+    <div class="week-row"><div class="week-label">Week 2</div><div class="week-bar"><span class="week-task wt-data">ETL pipeline</span><span class="week-task wt-data">Feature engineering</span><span class="week-task wt-data">Data quality report</span></div></div>
+    <div class="week-row"><div class="week-label">Week 3</div><div class="week-bar"><span class="week-task wt-ml">Readmission classifier</span><span class="week-task wt-ml">LOS regressor</span><span class="week-task wt-ml">MLflow tracking</span></div></div>
+    <div class="week-row"><div class="week-label">Week 4</div><div class="week-bar"><span class="week-task wt-ml">SHAP explainability</span><span class="week-task wt-ml">Statistical analysis notebook</span><span class="week-task wt-ml">Model evaluation</span></div></div>
+    <div class="week-row"><div class="week-label">Week 5</div><div class="week-bar"><span class="week-task wt-llm">Text prep + chunking</span><span class="week-task wt-llm">Embedding + FAISS index</span></div></div>
+    <div class="week-row"><div class="week-label">Week 6</div><div class="week-bar"><span class="week-task wt-llm">LangChain RAG chain</span><span class="week-task wt-llm">Prompt engineering</span><span class="week-task wt-llm">pgvector integration</span></div></div>
+    <div class="week-row"><div class="week-label">Week 7</div><div class="week-bar"><span class="week-task wt-api">FastAPI backend</span><span class="week-task wt-api">All endpoints</span><span class="week-task wt-api">Async + streaming</span></div></div>
+    <div class="week-row"><div class="week-label">Week 8</div><div class="week-bar"><span class="week-task wt-ui">Streamlit 3-page app</span><span class="week-task wt-ui">SHAP charts</span><span class="week-task wt-ui">Chat interface</span></div></div>
+    <div class="week-row"><div class="week-label">Week 9</div><div class="week-bar"><span class="week-task wt-eval">RAGAS eval suite</span><span class="week-task wt-eval">GitHub Actions CI/CD</span><span class="week-task wt-eval">Unit tests</span></div></div>
+    <div class="week-row"><div class="week-label">Week 10</div><div class="week-bar"><span class="week-task wt-deploy">Deploy HF Spaces + Render</span><span class="week-task wt-deploy">Power BI report</span><span class="week-task wt-deploy">README + portfolio</span></div></div>
+  </div>
+</div>
+
+<div id="portfolio" class="page">
+  <div class="section-title">How to present this on your portfolio & resume</div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Resume bullet points (copy-ready)</div>
+    <div class="step-code">• Built MediSightAI, an end-to-end healthcare AI platform combining ML risk models
+  and RAG-powered clinical document Q&A using LangChain, FAISS, pgvector, and Groq LLaMA-3
+
+• Designed a 5-stage ETL pipeline ingesting 5,000+ synthetic patient records from Synthea,
+  applying feature engineering (comorbidity scoring, lab deviation z-scores) into a
+  PostgreSQL Star Schema with automated data quality validation
+
+• Trained XGBoost readmission classifier (ROC-AUC: 0.84) and GBM length-of-stay regressor
+  (MAE: 1.2 days) with full Scikit-learn pipelines, SHAP explainability, and MLflow tracking
+
+• Implemented RAG pipeline with semantic chunking, sentence-transformer embeddings,
+  FAISS retrieval, and prompt-engineered LLM responses achieving 87% faithfulness (RAGAS)
+
+• Deployed FastAPI backend with async streaming endpoints and Streamlit demo on
+  Hugging Face Spaces; CI/CD via GitHub Actions</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">GitHub README must-haves</div>
+    <div class="card-body" style="line-height:1.9">
+      1. Demo GIF or screenshot at the very top (use ScreenToGif — free)<br>
+      2. Architecture diagram (use draw.io — free, export as PNG)<br>
+      3. Metrics table: AUC, F1, RAGAS faithfulness, retrieval recall@5<br>
+      4. Tech stack badges (shields.io)<br>
+      5. "How it works" section with the two data paths explained<br>
+      6. "Run locally" instructions (Docker Compose for PostgreSQL + pgvector)<br>
+      7. Link to live Hugging Face Spaces demo<br>
+      8. Link to data quality HTML report<br>
+      9. RAGAS evaluation results table
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Portfolio website section</div>
+    <div class="card-body" style="line-height:1.9">
+      On your existing portfolio (portfolio-blush-iota-16.vercel.app), add a project card with:<br>
+      — Title: "MediSight AI — Clinical Intelligence Platform"<br>
+      — Domain badge: Healthcare AI<br>
+      — 3 outcome metrics from your evaluation<br>
+      — Tech stack icons<br>
+      — Two buttons: "Live demo" (HF Spaces URL) + "GitHub" (repo URL)<br>
+      — A 2-sentence plain-English description of what it does and why it matters
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">How to talk about it in interviews</div>
+    <div class="card-body" style="line-height:1.9">
+      Opening line: "I built MediSight AI to demonstrate the full AI engineering stack in a domain where accuracy genuinely matters. It has two layers — a structured ML layer that scores readmission risk from patient vitals and diagnoses, and an unstructured RAG layer that lets clinicians ask natural-language questions about a patient's clinical notes with cited sources."<br><br>
+      When asked about RAG: point to chunking strategy, metadata filtering, RAGAS scores.<br>
+      When asked about ML: point to XGBoost pipeline, SHAP, MLflow, class imbalance handling.<br>
+      When asked about data engineering: point to ETL pipeline, Star Schema, validation rules.<br>
+      When asked about deployment: point to FastAPI, GitHub Actions, HF Spaces live URL.
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>

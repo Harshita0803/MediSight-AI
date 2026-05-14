@@ -1,0 +1,31 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+
+# Secrets
+.env
+
+# ML artifacts (large binaries)
+models/*.pkl
+models/*.joblib
+vector_store/*.index
+vector_store/*.pkl
+
+# Reports
+reports/*.html
+
+# Synthea output and JAR
+output/
+*.jar
+uv.lock
+
+# MLflow
+mlruns/
