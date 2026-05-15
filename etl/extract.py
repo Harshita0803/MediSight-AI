@@ -121,6 +121,7 @@ def extract_observations(csv_dir: Path) -> pd.DataFrame:
         "lab_id":           df["lab_id"],
         "encounter_id":     df["ENCOUNTER"],
         "patient_id":       df["PATIENT"],
+        "category":         df["CATEGORY"],   # "laboratory" vs "vital-signs" — kept for filtering
         "loinc_code":       df["CODE"].astype(str),
         "lab_name":         df["DESCRIPTION"],
         "value_numeric":    pd.to_numeric(df["VALUE"].where(numeric_mask), errors="coerce"),

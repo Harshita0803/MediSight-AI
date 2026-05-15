@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS dim_lab_result (
     lab_id          VARCHAR PRIMARY KEY,
     encounter_id    VARCHAR,
     patient_id      VARCHAR REFERENCES dim_patient(patient_id),
+    category        VARCHAR(50),    -- "laboratory" or "vital-signs"
     loinc_code      VARCHAR(20),
     lab_name        VARCHAR(500),
     value_numeric   FLOAT,
@@ -98,6 +99,79 @@ CREATE TABLE IF NOT EXISTS ml_features (
     last_los_days           FLOAT,
     updated_at              TIMESTAMP DEFAULT NOW()
 );
+
+-- ─── Encounter-level ML features (one row per inpatient/emergency encounter) ──
+
+CREATE TABLE IF NOT EXISTS ml_encounter_features (
+    encounter_id                VARCHAR PRIMARY KEY REFERENCES fact_encounters(encounter_id),
+    patient_id                  VARCHAR REFERENCES dim_patient(patient_id),
+    readmitted_30d              BOOLEAN,        -- ML target
+
+    -- Patient demographics at time of admission
+    age_at_admission            INT,
+    gender_encoded              INT,
+    insurance_risk_tier         INT,
+
+    -- This encounter
+    encounter_class_encoded     INT,            -- 0=outpatient 1=emergency 2=inpatient
+    length_of_stay_days         FLOAT,
+    total_claim_cost            FLOAT,
+
+    -- Diagnoses during this encounter
+    num_diagnoses_this_visit    INT,
+    has_heart_failure           BOOLEAN,
+    has_diabetes                BOOLEAN,
+    has_copd                    BOOLEAN,
+    has_ckd                     BOOLEAN,
+    has_hypertension            BOOLEAN,
+
+    -- Labs during this encounter
+    num_labs_this_visit         INT,
+    num_abnormal_labs_this_visit INT,
+    avg_lab_deviation_this_visit FLOAT,
+
+    -- Medications during this encounter
+    num_meds_this_visit         INT,
+
+    -- Patient history BEFORE this encounter (no leakage)
+    prior_admissions_6m         INT,
+    prior_admissions_12m        INT,
+    prior_admissions_total      INT,
+    days_since_previous_visit   INT,
+    is_first_admission          INT,            -- 1 = no prior inpatient history
+    comorbidity_count_prior     INT,
+
+    created_at                  TIMESTAMP DEFAULT NOW()
+);
+
+-- ─── Migrations (idempotent column additions and constraint additions) ────────
+-- All statements use IF NOT EXISTS / DO NOTHING patterns — safe to re-run.
+ALTER TABLE ml_encounter_features ADD COLUMN IF NOT EXISTS is_first_admission INT;
+
+-- FK constraints linking dimension encounter_id columns to fact_encounters.
+-- NOTE: PostgreSQL has no ADD CONSTRAINT IF NOT EXISTS syntax (unlike ADD COLUMN).
+-- We use DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL END $$ blocks,
+-- which are the idiomatic idempotent pattern for constraint additions in PostgreSQL.
+-- Load order in pipeline.py (patients → encounters → diagnoses/labs/meds) satisfies
+-- the FK dependency; truncate_all() uses one TRUNCATE statement so PostgreSQL handles
+-- inter-table FK dependencies atomically.
+DO $$ BEGIN
+    ALTER TABLE dim_diagnosis ADD CONSTRAINT fk_diag_encounter
+        FOREIGN KEY (encounter_id) REFERENCES fact_encounters(encounter_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE dim_medication ADD CONSTRAINT fk_med_encounter
+        FOREIGN KEY (encounter_id) REFERENCES fact_encounters(encounter_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE dim_lab_result ADD CONSTRAINT fk_lab_encounter
+        FOREIGN KEY (encounter_id) REFERENCES fact_encounters(encounter_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── Indexes ─────────────────────────────────────────────────────────────────
 
