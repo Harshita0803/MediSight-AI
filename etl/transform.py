@@ -1,8 +1,3 @@
-"""
-Transforms raw extracted records into clean, analytics-ready DataFrames
-and computes ML feature columns.
-"""
-
 import logging
 from datetime import date, datetime, timezone
 
@@ -115,26 +110,13 @@ def build_medications_df(raw_medications: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ─── 30-day readmission label ─────────────────────────────────────────────────
-
 def add_readmission_label(df_enc: pd.DataFrame) -> pd.DataFrame:
-    """
-    For each inpatient/emergency encounter, set readmitted_30d=True if the same
-    patient has another inpatient admission within 30 days of this discharge.
-
-    Censoring: encounters whose discharge_date falls within 30 days of the dataset's
-    last observed discharge cannot be confirmed as non-readmissions — Synthea simply
-    stopped generating data.  Labelling them False would inject false negatives.
-    These encounters receive readmitted_30d=NaN and are excluded from the ML feature
-    table by the downstream dropna() in build_encounter_ml_features.
-    """
     df = df_enc.copy().sort_values(["patient_id", "admission_date"])
 
     inpatient_mask = df["encounter_class"].isin(INPATIENT_CLASSES)
     df_ip = df.loc[inpatient_mask, ["patient_id", "encounter_id", "admission_date", "discharge_date"]].copy()
     df_ip = df_ip.sort_values(["patient_id", "admission_date"])
 
-    # Next inpatient admission date for each encounter within the same patient
     df_ip["next_admit"] = df_ip.groupby("patient_id")["admission_date"].shift(-1)
     df_ip["days_to_next"] = (
         (df_ip["next_admit"] - df_ip["discharge_date"]).dt.total_seconds() / 86_400
@@ -147,8 +129,6 @@ def add_readmission_label(df_enc: pd.DataFrame) -> pd.DataFrame:
         ]
     )
 
-    # Censoring boundary: any discharge within 30 days of the dataset's last discharge.
-    # If we observed the readmission it's confirmed True regardless of proximity to cutoff.
     max_discharge = df_ip["discharge_date"].max()
     censored_ids = set(
         df_ip.loc[
@@ -158,19 +138,13 @@ def add_readmission_label(df_enc: pd.DataFrame) -> pd.DataFrame:
         ]
     )
 
-    # Assign labels: True = confirmed readmission, False = confirmed negative,
-    # NaN = censored (excluded from ML training).
     label_map = {eid: True for eid in readmitted_ids}
     label_map.update({
         eid: False
         for eid in df_ip["encounter_id"]
         if eid not in readmitted_ids and eid not in censored_ids
     })
-    # Censored encounter_ids are absent from label_map → map produces NaN
-
     df["readmitted_30d"] = df["encounter_id"].map(label_map)
-    # Non-inpatient encounters are irrelevant to ML — give them False so the
-    # fact_encounters table has no nulls outside the inpatient population.
     df.loc[~inpatient_mask, "readmitted_30d"] = False
 
     n_ip = inpatient_mask.sum()
@@ -182,8 +156,6 @@ def add_readmission_label(df_enc: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-
-# ─── ML feature engineering ───────────────────────────────────────────────────
 
 CHRONIC_ICD_PREFIXES = (
     "E10", "E11",   # diabetes
@@ -215,7 +187,6 @@ def build_ml_features(
         lambda x: INSURANCE_RISK_TIERS.get(x, DEFAULT_INSURANCE_TIER)
     )
 
-    # Sort before aggregation so "last" gives the most recent encounter's LOS
     enc_sorted = df_encounters.sort_values(["patient_id", "admission_date"])
     enc_agg = (
         enc_sorted.groupby("patient_id")
@@ -227,9 +198,6 @@ def build_ml_features(
     )
     feat = feat.merge(enc_agg, on="patient_id", how="left")
 
-    # prior_admissions_12m: count inpatient admissions in the 12 months before
-    # each patient's LAST admission, not relative to wall-clock "now".
-    # Using wall-clock time would yield all-zero since Synthea data ends before 2026.
     df_ip = df_encounters[df_encounters["encounter_class"].isin(INPATIENT_CLASSES)].copy()
     last_admit = (
         df_ip.groupby("patient_id")["admission_date"].max()
@@ -285,9 +253,6 @@ def build_ml_features(
     feat = feat.merge(diag_count, on="patient_id", how="left")
     feat = feat.merge(chronic_count, on="patient_id", how="left")
 
-    # Synthea CSVs carry no reference ranges, so compute population z-scores per LOINC code.
-    # Same approach as build_encounter_ml_features — consistent across both feature tables.
-    # "laboratory" only: exclude vital-signs (heart rate, BP, temp) which are not lab results.
     lab_num = df_labs[df_labs["category"] == "laboratory"].dropna(subset=["value_numeric", "loinc_code"]).copy()
     pop_stats = (
         lab_num.groupby("loinc_code")["value_numeric"]
@@ -329,10 +294,6 @@ def build_ml_features(
     return feat
 
 
-# ─── Encounter-level ML features (no leakage) ────────────────────────────────
-# INPATIENT_CLASSES is imported from etl.ml_config — single source of truth shared
-# with add_readmission_label (above) and pipeline.py (DB load filter).
-
 CHRONIC_ICD_MAP = {
     "has_heart_failure": ["I50"],
     "has_diabetes":      ["E10", "E11"],
@@ -341,13 +302,6 @@ CHRONIC_ICD_MAP = {
     "has_hypertension":  ["I10"],
 }
 
-# Synthea's conditions.csv CODE column contains SNOMED CT codes (e.g. 44054006),
-# not ICD-10.  str[:3] on a SNOMED code gives "440", which never matches "E10".
-# Result: all ICD prefix checks return zero matches → all flags are False.
-#
-# Fix: also check the DESCRIPTION column using plain-English keywords.
-# The union of ICD-prefix matches and description matches is used for the flag,
-# so this works correctly for both Synthea (SNOMED) and real ICD-10 coded data.
 CHRONIC_DESCRIPTION_KEYWORDS = {
     "has_heart_failure": ["heart failure"],
     "has_diabetes":      ["diabetes mellitus", "type 1 diabetes", "type 2 diabetes"],
@@ -370,23 +324,16 @@ def build_encounter_ml_features(
     df_labs: pd.DataFrame,
     df_medications: pd.DataFrame,
 ) -> pd.DataFrame:
-    """
-    One row per inpatient/emergency encounter.
-    All history features computed from data BEFORE admission date (no leakage).
-    Vectorized — no Python-level row loops.
-    """
     df_ip = df_encounters[
         df_encounters["encounter_class"].isin(INPATIENT_CLASSES)
     ].copy()
     df_ip = df_ip.dropna(subset=["admission_date", "readmitted_30d"]).reset_index(drop=True)
     logger.info("Encounter-level dataset: %d inpatient/emergency encounters", len(df_ip))
 
-    # ── Patient demographics ──────────────────────────────────────────────────
     pat = df_patients[["patient_id", "birth_date", "gender", "insurance_type"]].copy()
     pat["birth_date"] = pd.to_datetime(pat["birth_date"], errors="coerce")
     df_ip = df_ip.merge(pat, on="patient_id", how="left")
 
-    # tz_convert(None) strips UTC offset without changing the underlying time
     df_ip["age_at_admission"] = (
         (df_ip["admission_date"].dt.tz_convert(None) - df_ip["birth_date"])
         .dt.days // 365
@@ -400,7 +347,6 @@ def build_encounter_ml_features(
         df_ip["encounter_class"].map(ENCOUNTER_CLASS_ENCODING).fillna(1).astype(int)
     )
 
-    # ── Diagnoses this encounter ──────────────────────────────────────────────
     diag_enc = (
         df_diagnoses.groupby("encounter_id")
         .agg(num_diagnoses_this_visit=("icd_code", "count"))
@@ -409,20 +355,6 @@ def build_encounter_ml_features(
     df_ip = df_ip.merge(diag_enc, on="encounter_id", how="left")
     df_ip["num_diagnoses_this_visit"] = df_ip["num_diagnoses_this_visit"].fillna(0).astype(int)
 
-    # Chronic flags are computed later (after prior_diag is built) so they can
-    # include patient history — see "Chronic condition flags" section below.
-
-    # ── Labs this encounter ───────────────────────────────────────────────────
-    # Population z-scores: z = (value - LOINC_mean) / LOINC_std.
-    # Abnormal = |z| > 2.  Filter to "laboratory" only (not vital-signs).
-    #
-    # Leakage-free normalisation: LOINC mean/std are fitted on TRAINING encounters
-    # only, then applied to all encounters.  The patient split reproduces
-    # _patient_split() in models/train.py exactly — same sklearn function, same
-    # parameters (test_size=0.2, random_state=42), same pandas-sorted patient order
-    # — so the training encounter set here matches the one used by the model.
-    # Storing these values in the DB means ml_encounter_features is correct for
-    # Phase 3 RAG queries and no post-ETL recomputation step is needed in training.
     _pat_labels = (
         df_ip.groupby("patient_id")["readmitted_30d"]
         .any()
@@ -446,11 +378,6 @@ def build_encounter_ml_features(
 
     lab_num = df_labs[df_labs["category"] == "laboratory"].dropna(subset=["value_numeric", "loinc_code"]).copy()
 
-    # Raw lab count computed BEFORE LOINC filtering so it reflects the true number
-    # of lab observations, not just those whose LOINC code appeared in training.
-    # If counted after filtering, test encounters with rare LOINC codes get an
-    # artificially lower count than training encounters — the feature means
-    # different things in train vs test.
     raw_lab_count = (
         lab_num.groupby("encounter_id")["value_numeric"]
         .count()
@@ -458,9 +385,6 @@ def build_encounter_ml_features(
         .reset_index()
     )
 
-    # LOINC population stats fitted on training encounters only (no leakage).
-    # LOINC codes not seen in training are dropped — their population distribution
-    # is unknown and cannot produce a valid z-score.
     pop_stats = (
         lab_num[lab_num["encounter_id"].isin(_train_enc_ids)]
         .groupby("loinc_code")["value_numeric"]
@@ -469,12 +393,10 @@ def build_encounter_ml_features(
     )
     pop_stats["pop_std"] = pop_stats["pop_std"].fillna(1.0).clip(lower=1e-6)
     lab_num = lab_num.merge(pop_stats, on="loinc_code", how="left")
-    lab_num = lab_num.dropna(subset=["pop_mean"])  # drop LOINC codes unseen in training
+    lab_num = lab_num.dropna(subset=["pop_mean"])
     lab_num["z_score"] = (lab_num["value_numeric"] - lab_num["pop_mean"]) / lab_num["pop_std"]
     lab_num["is_abnormal"] = lab_num["z_score"].abs() > 2.0
 
-    # Anomaly features from LOINC-normalised labs only (excludes rare LOINC codes).
-    # num_labs_this_visit is joined separately from the unfiltered raw_lab_count above.
     lab_enc_agg = (
         lab_num.groupby("encounter_id")
         .agg(
@@ -489,7 +411,6 @@ def build_encounter_ml_features(
     df_ip["num_abnormal_labs_this_visit"] = df_ip["num_abnormal_labs_this_visit"].fillna(0).astype(int)
     df_ip["avg_lab_deviation_this_visit"] = df_ip["avg_lab_deviation_this_visit"].fillna(0.0)
 
-    # ── Medications this encounter ────────────────────────────────────────────
     med_enc = (
         df_medications.groupby("encounter_id")
         .agg(num_meds_this_visit=("medication_id", "count"))
@@ -498,9 +419,6 @@ def build_encounter_ml_features(
     df_ip = df_ip.merge(med_enc, on="encounter_id", how="left")
     df_ip["num_meds_this_visit"] = df_ip["num_meds_this_visit"].fillna(0).astype(int)
 
-    # ── Patient history BEFORE this encounter (vectorized, no leakage) ────────
-    # Self-merge all inpatient encounters on patient_id, then filter prior < target.
-    # Avoids O(n²) Python loops — all filtering done in pandas C layer.
     all_ip = df_encounters[
         df_encounters["encounter_class"].isin(INPATIENT_CLASSES)
     ][["patient_id", "encounter_id", "admission_date"]].copy()
@@ -529,17 +447,11 @@ def build_encounter_ml_features(
         .rename("prior_admissions_6m").reset_index()
     )
 
-    # Days since most recent prior admission.
-    # NaN for first admissions — is_first_admission (below) captures that case cleanly.
-    # We do NOT use a 999 sentinel: StandardScaler would treat it as a real high value
-    # and distort the feature distribution.  Median imputation (in the train pipeline)
-    # handles the NaNs without leakage.
     prev_admit = prior.groupby("encounter_id")["prior_admit"].max().reset_index()
     prev_admit.columns = ["encounter_id", "prev_admit_date"]
     prev_admit = target[["encounter_id", "admission_date"]].merge(prev_admit, on="encounter_id", how="left")
     prev_admit["days_since_previous_visit"] = (
         (prev_admit["admission_date"] - prev_admit["prev_admit_date"]).dt.days
-        # float64 with NaN for first admissions
     )
 
     for stat_df in [prior_total, prior_12m, prior_6m]:
@@ -551,11 +463,9 @@ def build_encounter_ml_features(
     df_ip["prior_admissions_total"] = df_ip["prior_admissions_total"].fillna(0).astype(int)
     df_ip["prior_admissions_12m"]   = df_ip["prior_admissions_12m"].fillna(0).astype(int)
     df_ip["prior_admissions_6m"]    = df_ip["prior_admissions_6m"].fillna(0).astype(int)
-    # Nullable Int64: NaN → NULL in DB → median-imputed in training pipeline.
     df_ip["days_since_previous_visit"] = df_ip["days_since_previous_visit"].astype("Int64")
     df_ip["is_first_admission"]        = (df_ip["prior_admissions_total"] == 0).astype(int)
 
-    # ── Comorbidity count from diagnoses BEFORE this encounter (vectorized) ────
     diag_with_admit = df_diagnoses.merge(
         df_encounters[["encounter_id", "admission_date"]].rename(
             columns={"encounter_id": "diag_enc_id", "admission_date": "diag_enc_admit"}
@@ -578,17 +488,6 @@ def build_encounter_ml_features(
     df_ip = df_ip.merge(comorbidity_count, on="encounter_id", how="left")
     df_ip["comorbidity_count_prior"] = df_ip["comorbidity_count_prior"].fillna(0).astype(int)
 
-    # ── Chronic condition flags: current encounter OR prior patient history ────
-    # Chronic conditions in Synthea are coded at the encounter where they were
-    # first diagnosed, NOT re-coded at every subsequent encounter.  A patient with
-    # heart failure admitted for pneumonia has no I50 code on the pneumonia encounter
-    # — so a per-encounter check produces high false-negative rates.
-    # Correct definition: flag = True if coded at THIS encounter OR at any prior
-    # encounter whose admission date < this admission date (no leakage).
-    #
-    # Detection uses TWO complementary methods unioned together:
-    #   1. ICD-10 prefix match on icd_code  — works for real clinical data
-    #   2. Keyword match on icd_description — works for Synthea (SNOMED CT codes)
     for flag, prefixes in CHRONIC_ICD_MAP.items():
         prefix_set = set(prefixes)
         keywords   = CHRONIC_DESCRIPTION_KEYWORDS.get(flag, [])
@@ -613,7 +512,6 @@ def build_encounter_ml_features(
         prior_flagged   = _flagged_by_code(prior_diag)   | _flagged_by_desc(prior_diag)
         df_ip[flag] = df_ip["encounter_id"].isin(current_flagged | prior_flagged)
 
-    # ── Select final columns ──────────────────────────────────────────────────
     keep = [
         "encounter_id", "patient_id", "readmitted_30d",
         "age_at_admission", "gender_encoded", "insurance_risk_tier",
@@ -627,11 +525,6 @@ def build_encounter_ml_features(
     ]
     df_ip = df_ip[[c for c in keep if c in df_ip.columns]]
     df_ip["total_claim_cost"] = df_ip["total_claim_cost"].fillna(0.0)
-    # length_of_stay_days intentionally left as NaN (→ NULL in DB) when discharge_date
-    # is missing.  Filling with 0.0 would conflate "missing discharge" with a genuine
-    # same-day discharge and defeat the LOS regressor's "> 0" filter.
-    # The readmission classifier's SimpleImputer(strategy="median") handles NULL at
-    # training time without leakage.
 
     logger.info(
         "Encounter features: %d rows, %d columns, %.1f%% readmitted",

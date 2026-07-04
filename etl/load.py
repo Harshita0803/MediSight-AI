@@ -1,12 +1,3 @@
-"""
-Bulk-loads transformed DataFrames into PostgreSQL using psycopg2.
-
-Small tables  (<50k rows) : _upsert      — execute_values, single commit
-Large tables (>=50k rows) : _bulk_upsert — COPY → temp table → ON CONFLICT,
-                             committed every CHUNK_SIZE rows to prevent
-                             Supabase session-pooler timeouts.
-"""
-
 import io
 import logging
 import os
@@ -52,7 +43,6 @@ def _safe_val(v):
 
 
 def _upsert(conn, df: pd.DataFrame, table: str, columns: list[str], pk: str) -> int:
-    """INSERT … ON CONFLICT DO NOTHING via execute_values. Good for small tables."""
     records = [
         tuple(_safe_val(v) for v in row)
         for row in df[columns].itertuples(index=False)
@@ -68,14 +58,6 @@ def _upsert(conn, df: pd.DataFrame, table: str, columns: list[str], pk: str) -> 
 def _bulk_upsert(
     conn, df: pd.DataFrame, table: str, columns: list[str], pk: str
 ) -> int:
-    """
-    COPY → temp table → INSERT ON CONFLICT DO NOTHING, committed every CHUNK_SIZE rows.
-
-    Why temp table: COPY FROM is 10-100x faster than execute_values, but COPY doesn't
-    support ON CONFLICT natively.  We COPY into a throw-away temp table, then
-    INSERT-SELECT with ON CONFLICT DO NOTHING for idempotency.
-    Chunked commits prevent Supabase session-pooler timeout on multi-million-row loads.
-    """
     subset = df[columns].copy()
     col_str = ", ".join(columns)
     tmp = f"_tmp_{table.replace('.', '_')}"
@@ -114,10 +96,6 @@ def _bulk_upsert(
 def _bulk_copy_direct(
     conn, df: pd.DataFrame, table: str, columns: list[str]
 ) -> int:
-    """
-    Direct COPY with no ON CONFLICT — use only after a TRUNCATE so there are
-    no existing rows to conflict with.  Fastest possible load path.
-    """
     subset = df[columns].copy()
     col_str = ", ".join(columns)
     total = 0
@@ -135,15 +113,6 @@ def _bulk_copy_direct(
 
 
 def truncate_all(conn) -> None:
-    """
-    Truncate all tables in reverse FK dependency order so every ETL re-run
-    starts from a clean slate.  Without this, ON CONFLICT DO NOTHING silently
-    skips rows that already exist, meaning transform fixes never reach the DB.
-
-    Order (child → parent, so FK constraints are never violated):
-      ml_encounter_features → ml_features → fact_encounters
-      → dim_diagnosis / dim_lab_result / dim_medication → dim_patient
-    """
     tables = [
         "ml_encounter_features",
         "ml_features",

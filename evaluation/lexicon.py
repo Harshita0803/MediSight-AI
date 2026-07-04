@@ -1,0 +1,65 @@
+SYNONYMS: dict[str, list[str]] = {
+    "age_at_admission":            ["age at admission", "patient age", "older age", "advanced age",
+                                    "elderly", "years old", "the patient's age", "age"],
+    "gender_encoded":              ["gender", "sex", "male sex", "female sex"],
+    "insurance_risk_tier":         ["insurance risk", "insurance tier", "payer", "insurance coverage",
+                                    "uninsured", "insurance"],
+    "encounter_class_encoded":     ["encounter class", "encounter type", "admission type",
+                                    "type of encounter", "inpatient encounter", "emergency encounter",
+                                    "class of encounter"],
+    "length_of_stay_days":         ["length of stay", "prolonged stay", "days in hospital",
+                                    "hospital stay", "los"],
+    "num_diagnoses_this_visit":    ["number of diagnoses", "diagnosis count", "count of diagnoses",
+                                    "many diagnoses", "diagnoses this visit"],
+    "num_labs_this_visit":         ["number of labs", "lab count", "count of labs",
+                                    "laboratory tests ordered", "labs ordered", "number of laboratory"],
+    "num_abnormal_labs_this_visit":["abnormal labs", "abnormal laboratory", "out-of-range labs",
+                                    "out of range labs", "abnormal lab results", "deranged labs"],
+    "avg_lab_deviation_this_visit":["lab deviation", "laboratory deviation", "degree of lab abnormality",
+                                    "severity of lab", "how abnormal the labs", "average lab deviation"],
+    "num_meds_this_visit":         ["number of medications", "medication count", "count of medications",
+                                    "polypharmacy", "many medications", "medications this visit"],
+    "prior_admissions_6m":         ["prior admissions in the last 6 months",
+                                    "admissions in the last 6 months",
+                                    "admissions in the past 6 months",
+                                    "6-month admission", "six-month admission",
+                                    "recent 6 month admissions"],
+    "prior_admissions_12m":        ["prior admissions in the last year",
+                                    "admissions in the last year",
+                                    "admissions in the past year",
+                                    "12-month admission", "twelve-month admission",
+                                    "past-year admissions", "admissions over the past year"],
+    "prior_admissions_total":      ["total prior admissions", "total number of admissions",
+                                    "lifetime admissions", "overall admission history",
+                                    "cumulative admissions"],
+    "days_since_previous_visit":   ["days since the previous visit", "days since last visit",
+                                    "time since the previous admission", "time since last admission",
+                                    "recency of the last admission", "gap since the last visit"],
+    "comorbidity_count_prior":     ["comorbidity count", "number of comorbidities", "comorbidities",
+                                    "comorbid conditions", "burden of comorbidity",
+                                    "chronic condition burden"],
+    "has_heart_failure":           ["heart failure", "congestive heart failure", "chf", "cardiac failure"],
+    "has_diabetes":                ["diabetes", "diabetic", "diabetes mellitus"],
+    "has_copd":                    ["copd", "chronic obstructive pulmonary", "emphysema"],
+    "has_ckd":                     ["chronic kidney disease", "ckd", "renal disease", "kidney disease"],
+    "has_hypertension":            ["hypertension", "high blood pressure", "htn"],
+    "is_first_admission":          ["first admission", "first hospitalization", "no prior admission",
+                                    "index admission", "initial admission"],
+}
+
+INCREASE_CUES = [
+    "increase", "increases", "increased", "increasing", "raises", "raise", "raised",
+    "higher", "elevated", "elevates", "greater", "drives up", "contributes to",
+    "boosts", "adds to", "pushes up", "more likely", "high risk", "strong risk",
+    "risk factor", "heightens", "worsens",
+]
+DECREASE_CUES = [
+    "decrease", "decreases", "decreased", "decreasing", "lowers", "lower", "lowered",
+    "reduces", "reduce", "reduced", "protective", "less likely", "mitigates",
+    "diminishes", "offsets", "lessens",
+]
+
+for _feat in list(SYNONYMS):
+    _machine = _feat.replace("_", " ")
+    if _machine not in SYNONYMS[_feat]:
+        SYNONYMS[_feat].append(_machine)

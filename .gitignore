@@ -1,4 +1,4 @@
-# Python-generated files
+# Python
 __pycache__/
 *.py[oc]
 build/
@@ -13,14 +13,25 @@ venv/
 # Secrets
 .env
 
-# ML artifacts (large binaries)
+# ML artifacts
 models/*.pkl
 models/*.joblib
+models/shap_values.pkl
 vector_store/*.index
 vector_store/*.pkl
 
 # Reports
 reports/*.html
+reports/annotation*.csv
+reports/annotation*.json
+reports/faithfulness_results.json
+
+# Data
+data/faiss_index/
+data/notes_metadata.json
+data/eval_features.csv
+data/synthea_notes.csv
+data/NOTEEVENTS.csv
 
 # Synthea output and JAR
 output/
@@ -29,3 +40,11 @@ uv.lock
 
 # MLflow
 mlruns/
+mlflow.db
+
+# Claude Code internal files
+CLAUDE.md
+.claude/
+
+# Internal docs
+medisight_ai_project_blueprint.html

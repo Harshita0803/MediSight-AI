@@ -1,12 +1,3 @@
-"""
-Reads Synthea flat CSV files from output/csv/ and returns DataFrames
-ready for the transform stage.
-
-CSV files used:
-  patients.csv, encounters.csv, conditions.csv,
-  observations.csv, medications.csv, payers.csv, payer_transitions.csv
-"""
-
 import logging
 from pathlib import Path
 
@@ -32,7 +23,6 @@ def extract_patients(csv_dir: Path) -> pd.DataFrame:
         usecols=["PATIENT", "PAYER", "START_DATE", "END_DATE"],
     )
 
-    # Most-recent payer per patient → insurance_type
     transitions["START_DATE"] = pd.to_datetime(transitions["START_DATE"], errors="coerce", utc=True)
     latest = (
         transitions.sort_values("START_DATE")
@@ -81,7 +71,6 @@ def extract_encounters(csv_dir: Path) -> pd.DataFrame:
 
 def extract_conditions(csv_dir: Path) -> pd.DataFrame:
     df = _csv(csv_dir, "conditions.csv")
-    # Synthea conditions have no unique Id — synthesise one
     df["diagnosis_id"] = (
         df["PATIENT"].astype(str) + "_" +
         df["ENCOUNTER"].fillna("").astype(str) + "_" +
@@ -105,10 +94,7 @@ def extract_conditions(csv_dir: Path) -> pd.DataFrame:
 
 def extract_observations(csv_dir: Path) -> pd.DataFrame:
     df = _csv(csv_dir, "observations.csv")
-    # Keep only lab and vital-signs categories
     df = df[df["CATEGORY"].isin(["laboratory", "vital-signs"])].copy()
-
-    # Synthesise a unique id
     df["lab_id"] = (
         df["PATIENT"].astype(str) + "_" +
         df["ENCOUNTER"].fillna("").astype(str) + "_" +
@@ -121,7 +107,7 @@ def extract_observations(csv_dir: Path) -> pd.DataFrame:
         "lab_id":           df["lab_id"],
         "encounter_id":     df["ENCOUNTER"],
         "patient_id":       df["PATIENT"],
-        "category":         df["CATEGORY"],   # "laboratory" vs "vital-signs" — kept for filtering
+        "category":         df["CATEGORY"],
         "loinc_code":       df["CODE"].astype(str),
         "lab_name":         df["DESCRIPTION"],
         "value_numeric":    pd.to_numeric(df["VALUE"].where(numeric_mask), errors="coerce"),

@@ -1,8 +1,3 @@
-"""
-Data quality checks run after transformation, before loading.
-Returns a summary dict and raises ValueError on critical failures.
-"""
-
 import logging
 from dataclasses import dataclass, field
 
@@ -115,7 +110,6 @@ def validate_encounters(df: pd.DataFrame, df_patients: pd.DataFrame, report: Val
     _null_rate_check(df, "patient_id", "fact_encounters", report, critical=True)
     _referential_integrity(df, df_patients, "patient_id", "patient_id", "encounters→patients", report)
 
-    # LOS range check
     los = df["length_of_stay_days"].dropna()
     neg = (los < 0).sum()
     extreme = (los > 180).sum()
@@ -126,7 +120,6 @@ def validate_encounters(df: pd.DataFrame, df_patients: pd.DataFrame, report: Val
     if extreme > 0:
         report.warn(f"fact_encounters: {extreme} encounters with LOS > 180 days")
 
-    # Readmission rate sanity — computed on labelled encounters only (censored = NaN)
     if "readmitted_30d" in df.columns:
         labelled = df["readmitted_30d"].dropna()
         n_censored = df["readmitted_30d"].isna().sum()
@@ -174,10 +167,6 @@ def validate_encounter_features(
         "enc_features→fact_encounters", report,
     )
 
-    # Lab features: sum==0 catches total failure; fraction check catches partial failure
-    # (e.g., only a fraction of LOINC codes normalised).  At least 30% of inpatient
-    # encounters should have at least one abnormal lab — if Synthea generates realistic
-    # data, virtually every encounter has some out-of-range observation.
     MIN_LAB_NONZERO_FRACTION = 0.30
     for col in ("num_abnormal_labs_this_visit", "avg_lab_deviation_this_visit"):
         if col not in df.columns:
@@ -197,10 +186,6 @@ def validate_encounter_features(
         else:
             report.ok(f"ml_encounter_features.{col}: {nonzero_frac:.1%} encounters non-zero")
 
-    # Chronic disease flags must have non-zero rates.
-    # All-False means the flag logic in build_encounter_ml_features is broken —
-    # either the current-encounter check or the prior_diag join failed silently.
-    # Every flag should fire on at least some inpatient encounters in Synthea.
     for col in ("has_heart_failure", "has_diabetes", "has_copd", "has_ckd", "has_hypertension"):
         if col not in df.columns:
             continue
@@ -215,7 +200,6 @@ def validate_encounter_features(
         else:
             report.ok(f"ml_encounter_features.{col}: {n_true} True ({rate:.1%})")
 
-    # Readmission rate sanity check
     if "readmitted_30d" in df.columns:
         rate = df["readmitted_30d"].mean()
         if rate > 0.40:
@@ -225,7 +209,6 @@ def validate_encounter_features(
         else:
             report.ok(f"ml_encounter_features: readmission rate {rate:.1%}")
 
-    # No negative values in count features
     for col in ("num_labs_this_visit", "num_meds_this_visit", "num_diagnoses_this_visit"):
         if col in df.columns:
             neg = (df[col] < 0).sum()
@@ -234,7 +217,6 @@ def validate_encounter_features(
             else:
                 report.ok(f"ml_encounter_features.{col}: non-negative")
 
-    # days_since_previous_visit is nullable (NaN = first admission) but must never be negative
     if "days_since_previous_visit" in df.columns:
         neg = (df["days_since_previous_visit"].dropna() < 0).sum()
         if neg > 0:

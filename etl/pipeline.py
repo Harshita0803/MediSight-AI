@@ -1,8 +1,3 @@
-"""
-ETL pipeline orchestrator.
-Runs Extract → Transform → Validate → Load in sequence with structured logging.
-"""
-
 import logging
 import os
 import time
@@ -50,33 +45,17 @@ def setup_logging(level: str = "INFO") -> None:
 
 
 def run(csv_dir: str | Path | None = None, dsn: str | None = None) -> dict:
-    """
-    Run the full ETL pipeline.
-
-    Parameters
-    ----------
-    csv_dir : path to Synthea CSV output directory.
-              Defaults to CSV_DIR env var or 'output/csv'.
-    dsn     : PostgreSQL connection string.
-              Defaults to DATABASE_URL env var.
-
-    Returns
-    -------
-    dict with row counts and validation summary.
-    """
     t0 = time.perf_counter()
 
     csv_dir = Path(csv_dir or os.getenv("CSV_DIR", "output/csv"))
     if not csv_dir.exists():
         raise FileNotFoundError(f"CSV directory not found: {csv_dir}")
 
-    # ── Extract ───────────────────────────────────────────────────────────────
     logger.info("=== EXTRACT: reading CSV files from %s ===", csv_dir)
     t1 = time.perf_counter()
     raw = extract_all(csv_dir)
     logger.info("Extract done in %.1fs", time.perf_counter() - t1)
 
-    # ── Transform ─────────────────────────────────────────────────────────────
     logger.info("=== TRANSFORM ===")
     t2 = time.perf_counter()
 
@@ -96,7 +75,6 @@ def run(csv_dir: str | Path | None = None, dsn: str | None = None) -> dict:
 
     logger.info("Transform done in %.1fs", time.perf_counter() - t2)
 
-    # ── Validate ──────────────────────────────────────────────────────────────
     logger.info("=== VALIDATE ===")
     t3 = time.perf_counter()
 
@@ -109,17 +87,10 @@ def run(csv_dir: str | Path | None = None, dsn: str | None = None) -> dict:
     )
     report.raise_if_critical()
 
-    # ── Load ──────────────────────────────────────────────────────────────────
     logger.info("=== LOAD ===")
     t4 = time.perf_counter()
 
-    # Only load inpatient/emergency encounters and their associated records.
-    # Synthea generates ~703k total encounters; only ~38k are inpatient/emergency.
-    # Loading all records would exhaust the Supabase 500MB free tier.
-    # INPATIENT_CLASSES from ml_config is the single source of truth — it is also
-    # used by add_readmission_label and build_encounter_ml_features, guaranteeing
-    # that the set of encounters in the DB exactly matches what features were computed on.
-    df_enc_load  = df_encounters[df_encounters["encounter_class"].isin(INPATIENT_CLASSES)].copy()
+    df_enc_load = df_encounters[df_encounters["encounter_class"].isin(INPATIENT_CLASSES)].copy()
     inpatient_ids = set(df_enc_load["encounter_id"])
     df_diag_load = df_diagnoses[df_diagnoses["encounter_id"].isin(inpatient_ids)].copy()
     df_labs_load = df_labs[df_labs["encounter_id"].isin(inpatient_ids)].copy()
